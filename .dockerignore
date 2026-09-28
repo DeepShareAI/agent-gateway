@@ -1,0 +1,9 @@
+.git
+**/node_modules
+**/dist
+**/coverage
+.env
+.env.*
+mobile
+test-results
+playwright-report

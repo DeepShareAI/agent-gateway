@@ -1,0 +1,68 @@
+name: Day 1 checks
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  backend-and-web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+
+  containers:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - run: npm run setup
+      - run: docker compose config --quiet
+      - run: docker compose up --build --wait --wait-timeout 180
+      - name: Verify direct and proxied health
+        run: |
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          for (const url of ['http://127.0.0.1:3000/health', 'http://127.0.0.1:5173/api/health']) {
+            const response = await fetch(url);
+            assert.equal(response.status, 200);
+            assert.deepEqual(await response.json(), { status: 'ok', service: 'agent-gateway' });
+          }
+          JS
+      - run: docker compose down
+        if: always()
+
+  mobile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.35.7'
+          channel: stable
+          cache: true
+      - run: flutter pub get
+        working-directory: mobile
+      - run: dart format --output=none --set-exit-if-changed lib test
+        working-directory: mobile
+      - run: flutter analyze
+        working-directory: mobile
+      - run: flutter test
+        working-directory: mobile
+      - run: flutter build web
+        working-directory: mobile

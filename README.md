@@ -56,7 +56,7 @@ The Day 1 health endpoint is a liveness check and does not connect to PostgreSQL
 
 ### Run mobile
 
-Requires Flutter 3.47.5 and the platform tools for your device or simulator.
+Requires Flutter 3.35.7 (the pinned CI version) and the platform tools for your device or simulator.
 
 ```bash
 cd mobile

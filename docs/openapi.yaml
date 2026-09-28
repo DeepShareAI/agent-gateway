@@ -1,0 +1,54 @@
+openapi: 3.0.3
+info:
+  title: Agent Gateway API
+  version: 0.1.0
+  description: Day 1 public liveness endpoint. No private-data APIs are exposed.
+servers:
+  - url: http://localhost:3000
+  - url: http://localhost:5173/api
+paths:
+  /health:
+    get:
+      operationId: getHealth
+      summary: Check backend liveness
+      description: No query parameters are accepted. Does not check database readiness.
+      security: []
+      responses:
+        '200':
+          description: The backend is responding.
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum: [no-store]
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [status, service]
+                properties:
+                  status:
+                    type: string
+                    enum: [ok]
+                  service:
+                    type: string
+                    enum: [agent-gateway]
+        '400':
+          description: Unexpected query parameters.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [statusCode, message, error]
+                properties:
+                  statusCode:
+                    type: integer
+                    enum: [400]
+                  message:
+                    type: string
+                    enum: [Request validation failed]
+                  error:
+                    type: string
+                    enum: [Bad Request]
