@@ -16,7 +16,7 @@ Before making changes:
 
 1. Inspect repository structure.
 2. Read `README.md`.
-3. Read `DEVELOPMENT_PLAN.md`.
+3. Read `PLAN.md`.
 4. Identify the latest completed PR.
 5. Inspect relevant existing modules.
 6. Check existing tests.
@@ -304,6 +304,12 @@ Use:
 ## Rule 15 — Validate all external input
 
 All API/MCP requests must be validated.
+
+Use Zod schemas for runtime validation at TypeScript REST and MCP input boundaries before policy evaluation. Derive TypeScript input types from these schemas to keep runtime validation and static types aligned.
+
+Use Zod for React form validation as well, while keeping backend validation authoritative. Flutter clients must follow the documented API contracts and all their requests must undergo backend validation.
+
+Schema validation does not replace authentication, authorization, or server-side expiration checks.
 
 Reject:
 

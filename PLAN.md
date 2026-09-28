@@ -4,6 +4,7 @@
 
 **Version:** MVP v0.1
 **Backend:** Node.js + TypeScript + NestJS
+**Validation:** Zod for runtime schemas in the TypeScript backend and web app
 **Web:** React + TypeScript
 **Mobile:** Flutter
 **Database:** PostgreSQL + Prisma
@@ -152,7 +153,7 @@ agent-gateway/
 │
 ├── docker-compose.yml
 ├── README.md
-└── DEVELOPMENT_PLAN.md
+└── PLAN.md
 ```
 
 ---
@@ -162,6 +163,8 @@ agent-gateway/
 ## Phase 1 — Foundation
 
 ### Day 1 — PR01: Full-stack skeleton
+
+Implementation and verification status: [Day 1 validation](docs/day-1-validation.md). Container and device acceptance must be verified before declaring this milestone complete.
 
 Build:
 
@@ -178,6 +181,8 @@ Backend:
 ```text
 GET /health
 ```
+
+Establish Zod as the runtime validation library and a reusable NestJS request-validation mechanism for subsequent REST endpoints. Derive TypeScript input types from schemas. Configure Zod for React form validation as forms are introduced.
 
 Web:
 
@@ -330,6 +335,8 @@ Agents cannot invoke Gmail directly.
 ## Phase 3 — Authorization
 
 ### Day 7 — PR07: Agent Access Request API
+
+Define Zod schemas for request bodies, query parameters, and path parameters. Validate inputs before policy evaluation, including allowed fields, resource identifiers, result limits, and TTL bounds. Add negative tests for malformed inputs and unexpected fields.
 
 Implement:
 
@@ -718,6 +725,8 @@ Do not create Drive-specific authorization logic outside the common policy layer
 
 ### Day 22 — PR22: MCP Server
 
+Validate MCP tool inputs with Zod before passing requests into the Gateway pipeline. Reuse applicable backend schemas so REST and MCP enforce consistent input constraints, and test invalid tool inputs.
+
 Implement Agent Gateway MCP server.
 
 Example tools:
@@ -950,6 +959,8 @@ PII
 MCP
 ```
 
+Test Zod schemas and their REST/MCP integration with valid inputs, malformed inputs, unexpected fields, and boundary values. Verify invalid requests are rejected before policy evaluation or data-source access.
+
 ---
 
 ## Web
@@ -1024,7 +1035,7 @@ A PR is complete only when ALL are true:
 At the beginning of every coding session:
 
 ```text
-1. Read DEVELOPMENT_PLAN.md.
+1. Read PLAN.md.
 2. Inspect the repository.
 3. Determine the latest completed PR.
 4. Select ONLY the next unfinished PR.
