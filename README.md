@@ -39,6 +39,26 @@ docker compose up --build --wait
 
 Compose waits for PostgreSQL and backend health checks before starting dependent services. PostgreSQL persists in a named volume and has no published host port. Stop services with `docker compose down`; data is retained. This setup is for local development.
 
+### Use Colima on macOS
+
+Colima can provide the Docker engine instead of Docker Desktop. It requires the Docker CLI, Compose, and Buildx as well as Lima and a compatible VM backend.
+
+```bash
+colima start --runtime docker --cpus 2 --memory 3 --disk 20
+docker context use colima
+npm run setup
+docker compose up --build --wait
+```
+
+Stop any native backend/web development servers first so ports 3000 and 5173 are free. To stop the stack and VM while retaining database data:
+
+```bash
+docker compose down
+colima stop
+```
+
+On this project's macOS 12.7.6 development machine, Colima uses QEMU with a Monterey-compatible runtime installed under `~/.local`; Docker plugins are under `~/.docker/cli-plugins`. These tools are installed manually, not managed by Homebrew. The saved VM configuration uses 2 CPUs, 3 GB RAM, a 20 GB data disk, and a project-only 9p mount. After a reboot, `colima start` reuses that configuration. Other Macs need their own compatible Colima installation.
+
 ### Develop backend and web locally
 
 ```bash

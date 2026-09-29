@@ -1,6 +1,6 @@
 # Day 1 — PR01 validation
 
-Status: skeleton implemented; full milestone acceptance is pending Docker and native-device verification. Day 2 has not started.
+Status: Day 1's Docker Compose acceptance passed on macOS 12.7.6 using Colima's QEMU backend. Android/iOS native-device acceptance remains unverified. Day 2 has not started.
 
 ## Implemented
 
@@ -24,14 +24,17 @@ Status: skeleton implemented; full milestone acceptance is pending Docker and na
 | Flutter widget tests | 2 tests passed, including small screen with enlarged text |
 | Flutter web production build | Passed |
 | Local environment setup | Creates `.env`, preserves existing configuration, and is ignored by Git |
+| Colima VM | Passed on macOS 12.7.6, Intel x86_64, using QEMU |
+| `docker compose up --build --wait` | Passed; database, backend, and web report healthy |
+| Direct backend and Nginx-proxied health | Passed on ports 3000 and 5173 |
+| Compose service ports | Backend and web bound to host loopback; PostgreSQL has no published host port |
 | Compose, CI, and OpenAPI YAML | Parsed successfully; this is not container runtime verification |
 | Git whitespace validation | Passed |
 
-The development host has macOS 12.7.6. Node.js 22.23.3 and Flutter 3.35.7/Dart 3.9.2 were provisioned temporarily under `/tmp` for these checks; they were not installed into the system PATH. Flutter is pinned to 3.35.7 in CI because the latest SDK could not run on this host. Playwright used the installed Chrome through `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` because its bundled Chromium does not support this OS. Normal CI uses Playwright's bundled Chromium on Linux.
+The development host has macOS 12.7.6. Node.js 22.23.3 was installed in `~/.local`; Colima, Lima, Docker CLI, Compose, Buildx, and a Monterey-compatible QEMU runtime were installed under `~/.local` and `~/.docker/cli-plugins`. Colima runs an x86_64 VM with 2 CPUs, 3 GB RAM, a 20 GB data disk, and a project-only 9p mount. Flutter 3.35.7/Dart 3.9.2 were provisioned temporarily under `/tmp` for mobile checks; they were not installed into the system PATH. Flutter is pinned to 3.35.7 in CI because the latest SDK could not run on this host. Playwright used the installed Chrome through `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` because its bundled Chromium does not support this OS. Normal CI uses Playwright's bundled Chromium on Linux.
 
 ## Remaining acceptance checks
 
-- Docker is not installed on this host, so image builds, PostgreSQL startup/persistence, Nginx proxying, and `docker compose up` have not been exercised locally. The containers CI job builds and starts all services and checks direct and proxied health; that job has not been run here.
 - No Android emulator or iOS simulator/toolchain is available. Native builds and device launch remain unverified. Widget tests and a Flutter web build do not substitute for those checks.
 
 ## Scope and security
