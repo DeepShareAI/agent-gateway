@@ -1,6 +1,6 @@
 # Day 1 — PR01 validation
 
-Status: Day 1's Docker Compose acceptance passed on macOS 12.7.6 using Colima's QEMU backend. Android/iOS native-device acceptance remains unverified. Day 2 has not started.
+Status: Day 1's Docker Compose acceptance passed on macOS 12.7.6 using Colima's QEMU backend. Android/iOS native-device acceptance remains unverified. Cloudflare, Cloud Run, Neon PostgreSQL, and Codemagic production acceptance is now required from Day 1 and remains pending. Day 1 is incomplete; Day 2 has not started.
 
 ## Implemented
 
@@ -36,6 +36,12 @@ The development host has macOS 12.7.6. Node.js 22.23.3 was installed in `~/.loca
 ## Remaining acceptance checks
 
 - No Android emulator or iOS simulator/toolchain is available. Native builds and device launch remain unverified. Widget tests and a Flutter web build do not substitute for those checks.
+
+- GitHub Actions deployment orchestration and production gates have not been implemented; the existing workflow runs checks only.
+- Cloudflare and Cloud Run production deployments, deployed dashboard and API smoke checks, and rollback verification remain pending.
+- Neon production resources and TLS connectivity checks remain pending; `/health` does not verify database connectivity.
+- Codemagic production workflows, Android/iOS artifacts, signing, and production release configuration remain pending.
+- Record workflow run links, source commits, environment URLs, artifact identifiers, and results using the [deployment acceptance criteria](deployment.md).
 
 ## Scope and security
 

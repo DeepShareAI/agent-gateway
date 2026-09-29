@@ -10,10 +10,12 @@ A privacy and authorization gateway between AI agents and users' private data.
 | Validation | Zod for runtime schemas in the TypeScript backend and web app |
 | Web | React, TypeScript |
 | Mobile | Flutter |
-| Database | PostgreSQL, Prisma |
+| Database | Neon PostgreSQL, Prisma |
 | Agent protocol | MCP, REST API |
 | Push | APNs, FCM |
-| Deployment | Docker Compose |
+| CI/CD | GitHub Actions; Codemagic for mobile builds and releases |
+| Production | Cloudflare (web and edge), Cloud Run (backend), Neon PostgreSQL, Codemagic |
+| Local development | Docker Compose |
 | Testing | Jest, Supertest, Playwright, Flutter Test |
 
 Zod validates backend configuration, REST input, and health responses in the web app. Future REST endpoints, MCP tools, and React forms will use Zod schemas. Backend validation is authoritative.
@@ -21,6 +23,12 @@ Zod validates backend configuration, REST input, and health responses in the web
 ## Day 1 — Full-stack skeleton
 
 Implemented: NestJS `GET /health`, a React dashboard with live backend status and retry, a basic Flutter screen, and Docker Compose services for PostgreSQL, backend, and web. Authentication, private data access, Prisma models, and migrations belong to later milestones.
+
+### Day 1 production environment
+
+Production must use Cloudflare, Cloud Run, Neon PostgreSQL, and Codemagic from Day 1. GitHub Actions owns CI/CD orchestration and deployment gates; Codemagic runs mobile platform builds, signing, and distribution. Docker Compose remains the local development setup. A hosted test environment is deferred; CI checks and local testing remain required.
+
+The current repository has CI checks and the local skeleton; cloud deployment and Codemagic integration remain pending Day 1 acceptance. See the [deployment requirements](docs/deployment.md) and [validation status](docs/day-1-validation.md).
 
 ### Start with Docker Compose
 
@@ -111,3 +119,5 @@ Playwright starts the backend and Vite automatically. CI also builds the contain
 - [Architecture](docs/architecture.md)
 - [API contract](docs/api.md)
 - [Security boundaries](docs/security.md)
+
+- [Deployment and CI/CD](docs/deployment.md)

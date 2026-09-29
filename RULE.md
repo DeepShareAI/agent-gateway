@@ -297,7 +297,7 @@ Use:
 .env.example
 ```
 
-`.env` must be gitignored.
+`.env` must be gitignored and is for local development. Production uses environment-scoped GitHub Actions, cloud runtime, and Codemagic secret management. Keep production Neon credentials, deploy credentials, and mobile signing material out of local development and CI test jobs. Never place runtime secrets in web or mobile bundles.
 
 ---
 
@@ -424,6 +424,16 @@ PostgreSQL
 ```
 
 locally with minimal setup.
+
+---
+
+## Rule 20a — Cloud CI/CD starts on Day 1
+
+GitHub Actions is the CI/CD orchestrator. Production must use Cloudflare for web hosting and edge routing, Cloud Run for the backend, Neon PostgreSQL for the database, and Codemagic for mobile platform builds, signing, and distribution. Docker Compose is the local development path.
+
+Defer the hosted test environment for now. Require successful CI checks before gated production deployment. Track the source commit and artifacts across GitHub Actions and Codemagic. Keep production resources and credentials isolated from local/CI testing; untrusted pull requests must not receive deployment or signing secrets.
+
+Day 1 is incomplete until cloud deployment, native mobile artifacts, smoke checks, and rollback acceptance have evidence. Follow [deployment requirements](docs/deployment.md); never describe a planned pipeline as deployed.
 
 ---
 

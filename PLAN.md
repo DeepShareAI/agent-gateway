@@ -7,10 +7,12 @@
 **Validation:** Zod for runtime schemas in the TypeScript backend and web app
 **Web:** React + TypeScript
 **Mobile:** Flutter
-**Database:** PostgreSQL + Prisma
+**Database:** Neon PostgreSQL + Prisma
 **Agent Protocol:** MCP + REST API
 **Push:** APNs + FCM
-**Deployment:** Docker Compose
+**CI/CD:** GitHub Actions; Codemagic for mobile builds and releases
+**Production from Day 1:** Cloudflare + Cloud Run + Neon PostgreSQL + Codemagic
+**Local development:** Docker Compose
 **Testing:** Jest + Supertest + Playwright + Flutter Test
 
 ---
@@ -164,7 +166,7 @@ agent-gateway/
 
 ### Day 1 — PR01: Full-stack skeleton
 
-Implementation and verification status: [Day 1 validation](docs/day-1-validation.md). Container and device acceptance must be verified before declaring this milestone complete.
+Implementation and verification status: [Day 1 validation](docs/day-1-validation.md). Local container, native-device, and cloud production acceptance must be verified before declaring this milestone complete. The required cloud stack is Day 1 work, not a later release milestone. See [deployment and CI/CD](docs/deployment.md).
 
 Build:
 
@@ -172,8 +174,12 @@ Build:
 NestJS backend
 React web
 Flutter mobile
-PostgreSQL
-Docker Compose
+Neon PostgreSQL for production
+Cloudflare web hosting and edge routing
+Cloud Run backend
+GitHub Actions CI/CD orchestration
+Codemagic Android/iOS builds, signing, and distribution
+Docker Compose for local development
 ```
 
 Backend:
@@ -206,6 +212,12 @@ database starts
 web starts
 Flutter app starts
 health check passes
+GitHub Actions checks gate deployments
+Cloudflare web and Cloud Run backend deployed in production
+Production Neon database provisioned and connectivity verified
+Codemagic production workflows build Android and iOS artifacts
+Gated production signing and release configuration verified
+Deployed smoke checks and rollback procedure verified
 ```
 
 ---
@@ -226,7 +238,7 @@ AuditEvent
 
 Define relationships and indexes.
 
-Add migrations.
+Add migrations. Validate them against disposable local/CI PostgreSQL before running them through the gated production deployment workflow; keep production credentials out of test jobs.
 
 Acceptance:
 
@@ -841,7 +853,9 @@ Credentials never appear in logs
 Complete:
 
 ```text
-Docker Compose
+Cloud production release verification using the Day 1 CI/CD pipeline
+Codemagic mobile release verification
+Docker Compose local development documentation
 README
 architecture documentation
 security documentation
@@ -1138,7 +1152,7 @@ Mac
 Windows
 Linux
 Docker
-Cloud-hosted Gateway
+Additional cloud deployment options beyond the Day 1 stack
 Enterprise Gateway
 ```
 

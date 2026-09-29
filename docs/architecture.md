@@ -18,6 +18,22 @@ The web app validates the health response with Zod and displays checking, online
 
 The Flutter foundation renders a static screen and does not claim to have a backend connection. API client, authentication, and approval flows are later milestones.
 
+## Required production architecture from Day 1
+
+```text
+Browser → Cloudflare web hosting and edge → /api/* → Cloud Run NestJS
+                                                        │
+                                                        ▼
+                                                  Neon PostgreSQL
+
+GitHub Actions → checks → production deployment gate → production
+               → Codemagic → Android/iOS builds and distribution
+```
+
+Provision the production environment from Day 1; defer a hosted test environment. Keep local/CI testing isolated from production resources and secrets. Cloudflare must preserve same-origin browser API routing, mapping `/api/health` to backend `/health`, and must not cache API responses. Cloud Run must listen on its supplied port on `0.0.0.0`; local loopback defaults need deployment configuration. Neon provisioning and a separate connectivity check are Day 1 requirements; Prisma domain models and migrations remain Day 2.
+
+The diagram describes the required deployment target. Cloud configuration and release workflows are not yet implemented in this repository. Flutter remains a static screen until its API client milestone, but native builds and release configuration in Codemagic are required from Day 1. See [deployment and CI/CD](deployment.md).
+
 ## Implementation references
 
 - [NestJS pipes](https://docs.nestjs.com/pipes): validate arguments before route handlers.
