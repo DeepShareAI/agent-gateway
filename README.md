@@ -15,6 +15,7 @@ The plan establishes production delivery on Day 1: Cloudflare relay, GitHub Acti
 - [Security](docs/security.md)
 - [Production account setup and delivery](docs/production-setup.md)
 - [Day 1 API](docs/api.md)
+- [Day 1 validation status](docs/day1-status.md)
 
 ## Local development
 
