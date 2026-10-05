@@ -27,7 +27,7 @@ if (result.status !== 0) {
   // diagnose container failures without downloading authenticated job logs.
   if (process.env.GITHUB_ACTIONS === "true") {
     const annotation = detail
-      .slice(-10000)
+      .slice(-3500)
       .replaceAll("%", "%25")
       .replaceAll("\r", "%0D")
       .replaceAll("\n", "%0A");

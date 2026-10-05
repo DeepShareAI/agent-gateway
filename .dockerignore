@@ -2,6 +2,9 @@
 .tools
 **/node_modules
 **/.dart_tool
+**/.wrangler
+**/dist
+**/.tools
 **/build
 **/.wrangler
 .env*
