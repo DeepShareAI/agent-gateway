@@ -1,0 +1,87 @@
+name: Production delivery
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: production-delivery
+  cancel-in-progress: false
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.23.3"
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      - run: docker compose up --build --wait --wait-timeout 180
+      - run: node scripts/smoke.mjs
+      - if: always()
+        run: docker compose down
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version-file: mobile/pubspec.yaml
+          cache: true
+      - working-directory: mobile
+        run: flutter pub get && flutter analyze && flutter test
+  deploy:
+    needs: verify
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.23.3"
+          cache: npm
+      - run: npm ci
+      - name: Check production configuration
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          RELAY_URL: ${{ vars.RELAY_URL }}
+          STAGING_RELAY_URL: ${{ vars.STAGING_RELAY_URL }}
+          CM_API_TOKEN: ${{ secrets.CM_API_TOKEN }}
+          CM_APP_ID: ${{ vars.CM_APP_ID }}
+        run: node scripts/require-release-config.mjs
+      - name: Deploy staging and verify release
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          WRANGLER_SEND_METRICS: "false"
+          RELAY_URL: ${{ vars.STAGING_RELAY_URL }}
+          EXPECTED_REVISION: ${{ github.sha }}
+          EXPECTED_ENVIRONMENT: staging
+        run: |
+          npx wrangler deploy --config relay/wrangler.toml --env staging --var RELEASE_SHA:${GITHUB_SHA}
+          node scripts/verify-health.mjs
+      - name: Deploy production and verify release
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          WRANGLER_SEND_METRICS: "false"
+          RELAY_URL: ${{ vars.RELAY_URL }}
+          EXPECTED_REVISION: ${{ github.sha }}
+          EXPECTED_ENVIRONMENT: production
+        run: |
+          npx wrangler deploy --config relay/wrangler.toml --env production --var RELEASE_SHA:${GITHUB_SHA}
+          node scripts/verify-health.mjs
+      - name: Build, sign, and publish mobile apps through Codemagic
+        env:
+          STAGING_RELAY_URL: ${{ vars.STAGING_RELAY_URL }}
+          CM_API_TOKEN: ${{ secrets.CM_API_TOKEN }}
+          CM_APP_ID: ${{ vars.CM_APP_ID }}
+          RELEASE_BRANCH: ${{ github.ref_name }}
+          EXPECTED_REVISION: ${{ github.sha }}
+          RELAY_URL: ${{ vars.RELAY_URL }}
+        run: node scripts/codemagic-release.mjs
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: delivery-report
+          path: delivery-report.json
+          if-no-files-found: ignore

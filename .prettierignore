@@ -1,0 +1,11 @@
+.tools
+node_modules
+mobile
+package-lock.json
+dist
+.wrangler
+PLAN.md
+RULE.md
+SPEC.md
+docs/architecture.md
+docs/security.md

@@ -1,0 +1,49 @@
+services:
+  relay:
+    build: .
+    ports: ["127.0.0.1:${RELAY_PORT:-8787}:8787"]
+    environment:
+      WRANGLER_SEND_METRICS: "false"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:8787/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 20s
+  mock-providers:
+    build: .
+    command: ["node", "dev/mock-providers.mjs"]
+    ports: ["127.0.0.1:${MOCK_PORT:-8788}:8788"]
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:8788/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+  demo-agent:
+    build: .
+    command:
+      ["npm", "run", "dev", "--workspace", "@agent-gateway/agent-adapter"]
+    ports: ["127.0.0.1:${AGENT_PORT:-8789}:8789"]
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:8789/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 12

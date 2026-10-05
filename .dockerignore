@@ -1,0 +1,9 @@
+.git
+.tools
+**/node_modules
+**/.dart_tool
+**/build
+**/.wrangler
+.env*
+*.jks
+*.p8

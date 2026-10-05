@@ -1,0 +1,114 @@
+workflows:
+  android-bootstrap:
+    name: Initial signed Android artifacts for Play Console setup
+    max_build_duration: 90
+    instance_type: mac_mini_m2
+    environment:
+      groups: [production_mobile]
+      android_signing: [agent_gateway_upload]
+      flutter: 3.47.6
+      java: 17
+    scripts:
+      - name: Verify tested revision
+        script: |
+          set -eu
+          test "$(git rev-parse HEAD)" = "$EXPECTED_REVISION"
+          test -n "$RELAY_URL"
+      - name: Build initial signed artifacts
+        script: |
+          set -eu
+          cd mobile
+          flutter pub get
+          flutter analyze
+          flutter test
+          flutter build appbundle --release --build-number=1 --dart-define=RELAY_URL="$RELAY_URL" --dart-define=RELEASE_SHA="$EXPECTED_REVISION" --dart-define=ENVIRONMENT=production
+          flutter build apk --release --build-number=1 --dart-define=RELAY_URL="$RELAY_URL" --dart-define=RELEASE_SHA="$EXPECTED_REVISION" --dart-define=ENVIRONMENT=production
+    artifacts:
+      - mobile/build/app/outputs/bundle/release/*.aab
+      - mobile/build/app/outputs/flutter-apk/*-release.apk
+  android-release:
+    name: Android signed internal release
+    max_build_duration: 90
+    instance_type: mac_mini_m2
+    environment:
+      groups: [production_mobile]
+      android_signing: [agent_gateway_upload]
+      flutter: 3.47.6
+      java: 17
+    scripts:
+      - name: Verify tested revision and configuration
+        script: |
+          set -eu
+          test "$(git rev-parse HEAD)" = "$EXPECTED_REVISION"
+          test -n "$RELAY_URL"
+          test -n "$ANDROID_PACKAGE_NAME"
+          test -n "$GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS"
+          grep -F "applicationId = \"$ANDROID_PACKAGE_NAME\"" mobile/android/app/build.gradle.kts
+      - name: Analyze and test
+        script: |
+          set -eu
+          cd mobile
+          flutter pub get
+          flutter analyze
+          flutter test
+      - name: Build signed Android bundle
+        script: |
+          set -eu
+          cd mobile
+          LATEST=$(google-play get-latest-build-number --package-name "$ANDROID_PACKAGE_NAME" --tracks internal)
+          BUILD_NUMBER=$((LATEST + 1))
+          flutter build appbundle --release --build-number="$BUILD_NUMBER" --dart-define=RELAY_URL="$RELAY_URL" --dart-define=RELEASE_SHA="$EXPECTED_REVISION" --dart-define=ENVIRONMENT=production
+    artifacts:
+      - mobile/build/app/outputs/bundle/release/*.aab
+    publishing:
+      google_play:
+        credentials: $GOOGLE_PLAY_SERVICE_ACCOUNT_CREDENTIALS
+        track: internal
+        submit_as_draft: false
+  ios-release:
+    name: iOS signed TestFlight release
+    max_build_duration: 90
+    instance_type: mac_mini_m2
+    integrations:
+      app_store_connect: agent-gateway-asc
+    environment:
+      groups: [production_mobile]
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.deepshareai.agentgateway
+      flutter: 3.47.6
+      xcode: "26.6"
+      cocoapods: default
+    scripts:
+      - name: Verify tested revision and configuration
+        script: |
+          set -eu
+          test "$(git rev-parse HEAD)" = "$EXPECTED_REVISION"
+          test -n "$RELAY_URL"
+          test -n "$APP_STORE_APPLE_ID"
+      - name: Analyze and test
+        script: |
+          set -eu
+          cd mobile
+          flutter pub get
+          flutter analyze
+          flutter test
+      - name: Apply signing profiles
+        script: |
+          set -eu
+          xcode-project use-profiles
+      - name: Build signed iOS archive
+        script: |
+          set -eu
+          cd mobile
+          LATEST=$(app-store-connect get-latest-testflight-build-number "$APP_STORE_APPLE_ID")
+          BUILD_NUMBER=$((LATEST + 1))
+          flutter build ipa --release --build-number="$BUILD_NUMBER" --export-options-plist=/Users/builder/export_options.plist --dart-define=RELAY_URL="$RELAY_URL" --dart-define=RELEASE_SHA="$EXPECTED_REVISION" --dart-define=ENVIRONMENT=production
+    artifacts:
+      - mobile/build/ios/ipa/*.ipa
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+        beta_groups: [Agent Gateway Internal]
+        submit_to_app_store: false

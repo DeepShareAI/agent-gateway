@@ -1,0 +1,16 @@
+.tools/
+node_modules/
+.env
+.env.*
+!.env.example
+.dev.vars*
+dist/
+.wrangler/
+coverage/
+*.jks
+*.keystore
+*.p12
+*.mobileprovision
+*.p8
+key.properties
+delivery-report.json

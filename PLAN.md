@@ -12,7 +12,7 @@
 **Mobile builds/signing/distribution:** Codemagic Android/iOS workflows
 **Local development:** Docker Compose for relay, mock providers, and demo agent
 
-This plan replaces the server-authoritative NestJS/PostgreSQL/web design. Production delivery starts on Day 1 with a health-only relay and signed mobile shells distributed to testers. Later milestones ship through the same pipeline as their acceptance checks pass. The repository contains planning documents only; all implementation milestones are pending. See [architecture](docs/architecture.md), [security](docs/security.md), and [rules](RULE.md).
+This plan replaces the server-authoritative NestJS/PostgreSQL/web design. Production delivery starts on Day 1 with a health-only relay and signed mobile shells distributed to testers. Later milestones ship through the same pipeline as their acceptance checks pass. Day 1 implementation is in progress; production account setup and live delivery validation are required before it can be marked complete. Later milestones remain pending. See [architecture](docs/architecture.md), [security](docs/security.md), [production setup](docs/production-setup.md), and [rules](RULE.md).
 
 ## Proposed repository structure
 

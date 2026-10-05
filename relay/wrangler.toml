@@ -1,0 +1,22 @@
+name = "agent-gateway-relay"
+main = "src/index.ts"
+compatibility_date = "2026-10-01"
+workers_dev = true
+
+[env.local.vars]
+ENVIRONMENT = "local"
+RELEASE_SHA = "local"
+
+[env.staging]
+name = "agent-gateway-relay-staging"
+workers_dev = true
+[env.staging.vars]
+ENVIRONMENT = "staging"
+RELEASE_SHA = "unconfigured"
+
+[env.production]
+name = "agent-gateway-relay-production"
+workers_dev = true
+[env.production.vars]
+ENVIRONMENT = "production"
+RELEASE_SHA = "unconfigured"

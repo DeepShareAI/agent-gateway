@@ -1,0 +1,31 @@
+{
+  "name": "agent-gateway",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "workspaces": [
+    "relay",
+    "agent-adapter"
+  ],
+  "scripts": {
+    "test": "npm test --workspaces && node --test scripts/*.test.mjs",
+    "typecheck": "npm run typecheck --workspaces",
+    "lint": "eslint .",
+    "format:check": "prettier --check .",
+    "format": "prettier --write .",
+    "build": "npm run build --workspaces",
+    "check": "npm run format:check && npm run config:check && npm run lint && npm run typecheck && npm test && npm run build",
+    "config:check": "node scripts/validate-config.mjs"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.0.0",
+    "eslint": "^9.0.0",
+    "globals": "^16.0.0",
+    "prettier": "^3.0.0",
+    "typescript": "^5.0.0",
+    "typescript-eslint": "^8.0.0",
+    "yaml": "^2.0.0"
+  }
+}
