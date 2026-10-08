@@ -6,6 +6,8 @@ Enter secrets directly in provider settings, never in chat or committed files. C
 
 Provide the commit author name and email. Repository: `DeepShareAI/agent-gateway`; working branch: `relay-architecture`. Enable GitHub Actions and allow the selected Actions used by CI. Add a `production` GitHub environment, restrict deployments to the intended trusted branch, and configure release reviewers if your team requires them. Release is explicitly dispatched from the selected branch, not triggered by pull requests.
 
+GitHub requires manually dispatched workflow files to exist on the repository's default branch. Currently `main` contains the older server/web implementation, while the mobile-authoritative Day 1 implementation and release/recovery workflows are on `relay-architecture`. Before dispatch, promote the intended implementation to the default branch or explicitly select `relay-architecture` as the repository's default branch. Confirm the trusted deployment-branch restriction matches the branch selected for delivery. Do not dispatch the older implementation.
+
 The Day 1 production workflow runs the checks again on its selected commit. Codemagic verifies the fetched commit before building; branch drift fails the build rather than silently shipping a different revision. Keep the release branch stable during delivery. A deployment can succeed while mobile distribution fails; the aggregate release must remain failed in that situation.
 
 ## 2. Cloudflare

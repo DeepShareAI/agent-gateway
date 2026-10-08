@@ -32,6 +32,7 @@ GitHub production delivery deploys staging/production relays and runs only the C
 ## Pending acceptance evidence
 
 - Production delivery workflow execution with configured provider accounts.
+- Release/recovery workflow registration on the default branch: `main` still contains the older implementation, while the intended implementation is on `relay-architecture`.
 - Live verification of configured Cloudflare credentials, deployed staging/production URLs and revision checks.
 - Live verification of the user-configured Codemagic integration, Apple signing identities, app record, and TestFlight group.
 - Successful signed iOS build and TestFlight distribution; native iOS builds require Codemagic.
@@ -41,6 +42,8 @@ GitHub production delivery deploys staging/production relays and runs only the C
 No Gmail, push-provider, pairing, encryption, connector, or approval features have been implemented in Day 1. Later milestones remain pending.
 
 ## GitHub CI evidence
+
+[CI run 37741823009](https://github.com/DeepShareAI/agent-gateway/actions/runs/37741823009) passed for iOS-only delivery commit `edee142c92780615099fd0af11762a8cfb836177`. Node verification/builds, the 10 Node tests, Docker Compose startup and health/private-route smoke checks, Flutter formatting/analysis/tests, and the Android debug APK build all passed. Both configured `agentbrain.workers.dev` health endpoints returned HTTP 404 during the October 8 readiness check; no live relay deployment or TestFlight delivery is claimed.
 
 [CI run 37289995185](https://github.com/DeepShareAI/agent-gateway/actions/runs/37289995185) passed for implementation commit `b67e90a`. Both Node and mobile jobs completed successfully, including Compose container startup and health/private-route smoke checks, Node verification/builds, Flutter analysis/tests, and the Android debug APK build. Docker is still unavailable as a local daemon on this Windows machine, but the local stack has been exercised on the Linux CI runner.
 
