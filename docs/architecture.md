@@ -97,7 +97,7 @@ Large encrypted results use HTTPS callbacks. If forwarding fails, retain bounded
 
 ## Deployment
 
-Production deployment begins on Day 1. GitHub Actions runs checks, deploys the tested Cloudflare Worker with Wrangler, and orchestrates Codemagic Android/iOS builds for the same commit. Codemagic manages native builds, signing, and distribution to configured tester channels, including TestFlight for iOS. GitHub Actions verifies completed build/distribution status rather than treating an accepted build trigger as success. The initial production relay exposes health only; source access remains disabled until the complete security pipeline is ready.
+Production deployment begins on Day 1. GitHub Actions runs checks, deploys the tested Cloudflare Worker with Wrangler, and orchestrates the Codemagic iOS build for the same commit. Android signing and distribution are currently deferred. Codemagic manages native builds, signing, and TestFlight distribution for iOS. GitHub Actions verifies completed build/distribution status rather than treating an accepted build trigger as success. The initial production relay exposes health only; source access remains disabled until the complete security pipeline is ready.
 
 Docker Compose runs the local Worker development service, mock providers, and demo-agent callback receiver. Flutter runs on the host/device; Codemagic provides the native iOS build environment. Compose is local tooling and introduces no production relay persistence. No NestJS backend, PostgreSQL database, or web approval authority is required.
 

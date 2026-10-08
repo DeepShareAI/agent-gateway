@@ -70,7 +70,7 @@ jobs:
         run: |
           npx wrangler deploy --config relay/wrangler.toml --env production --var RELEASE_SHA:${GITHUB_SHA}
           node scripts/verify-health.mjs
-      - name: Build, sign, and publish mobile apps through Codemagic
+      - name: Build, sign, and publish iOS through Codemagic
         env:
           STAGING_RELAY_URL: ${{ vars.STAGING_RELAY_URL }}
           CM_API_TOKEN: ${{ secrets.CM_API_TOKEN }}

@@ -15,7 +15,7 @@ if (!/^[a-f0-9]{40}$/.test(process.env.EXPECTED_REVISION))
 if (new URL(process.env.RELAY_URL).protocol !== "https:")
   throw new Error("Relay must use HTTPS");
 const results = await Promise.allSettled(
-  ["android-release", "ios-release"].map((workflow) =>
+  ["ios-release"].map((workflow) =>
     runBuild({
       appId: process.env.CM_APP_ID,
       token: process.env.CM_API_TOKEN,
@@ -35,5 +35,5 @@ await writeFile("delivery-report.json", JSON.stringify(report, null, 2));
 if (results.some((result) => result.status === "rejected"))
   throw new Error("Mobile delivery failed; see sanitized delivery report");
 console.log(
-  "Both signed mobile workflows and configured publishing stages completed. Verify tester installation separately.",
+  "Signed iOS workflow and TestFlight publishing completed. Android delivery is deferred. Verify tester installation separately.",
 );

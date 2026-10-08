@@ -1,0 +1,85 @@
+name: Relay recovery
+on:
+  workflow_dispatch:
+    inputs:
+      relay_environment:
+        description: Relay environment
+        type: choice
+        options: [staging, production]
+        default: staging
+        required: true
+      operation:
+        description: List versions or activate an explicitly selected compatible version
+        type: choice
+        options: [list, rollback]
+        default: list
+        required: true
+      version_id:
+        description: Worker version UUID (required for rollback)
+        type: string
+      expected_revision:
+        description: Full commit SHA served by the selected version (required for rollback)
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: production-delivery
+  cancel-in-progress: false
+jobs:
+  recovery:
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      WRANGLER_SEND_METRICS: "false"
+      TARGET_ENVIRONMENT: ${{ inputs.relay_environment }}
+      TARGET_VERSION: ${{ inputs.version_id }}
+      EXPECTED_REVISION: ${{ inputs.expected_revision }}
+      EXPECTED_ENVIRONMENT: ${{ inputs.relay_environment }}
+      RELAY_URL: ${{ inputs.relay_environment == 'staging' && vars.STAGING_RELAY_URL || vars.RELAY_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.23.3"
+          cache: npm
+      - run: npm ci
+      - name: Validate recovery configuration
+        run: |
+          node --input-type=module <<'JS'
+          for (const name of ['CLOUDFLARE_ACCOUNT_ID', 'CLOUDFLARE_API_TOKEN', 'RELAY_URL']) {
+            if (!process.env[name]) throw new Error(`Missing ${name}`);
+          }
+          if (!['staging', 'production'].includes(process.env.TARGET_ENVIRONMENT)) {
+            throw new Error('Invalid relay environment');
+          }
+          if (new URL(process.env.RELAY_URL).protocol !== 'https:') {
+            throw new Error('Relay must use HTTPS');
+          }
+          JS
+      - name: Validate explicit rollback target
+        if: inputs.operation == 'rollback'
+        run: |
+          node --input-type=module <<'JS'
+          if (!/^[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(process.env.TARGET_VERSION)) {
+            throw new Error('Provide the explicit compatible Worker version UUID');
+          }
+          if (!/^[a-f0-9]{40}$/.test(process.env.EXPECTED_REVISION)) {
+            throw new Error('Provide the full commit SHA served by the selected version');
+          }
+          JS
+      - name: List deployed versions
+        run: npx wrangler deployments list --config relay/wrangler.toml --env "$TARGET_ENVIRONMENT" --json > relay-deployments-before.json
+      - name: Activate selected version and verify health
+        if: inputs.operation == 'rollback'
+        run: |
+          npx wrangler rollback "$TARGET_VERSION" --config relay/wrangler.toml --env "$TARGET_ENVIRONMENT" --message "Explicit compatible relay recovery" --yes
+          node scripts/verify-health.mjs
+          npx wrangler deployments list --config relay/wrangler.toml --env "$TARGET_ENVIRONMENT" --json > relay-deployments-after.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: relay-recovery-${{ inputs.relay_environment }}
+          path: relay-deployments-*.json
+          if-no-files-found: ignore

@@ -23,4 +23,4 @@ Install Node.js 22, Flutter 3.47.6, and Docker with Compose. Run `npm ci`, then 
 
 For mobile, run `flutter pub get`, `flutter analyze`, `flutter test`, and `flutter run` from `mobile/`. Native Android requires its SDK; iOS builds/signing use a Mac or Codemagic. Release builds use `ENVIRONMENT`, `RELAY_URL`, and `RELEASE_SHA` Dart defines; secrets are never embedded in app configuration.
 
-CI runs on pull requests and pushes to `main`/`relay-architecture`. The manually dispatched **Production delivery** workflow verifies its revision, deploys staging/production Workers, and orchestrates both Codemagic release workflows. Configure the production GitHub environment and mobile signing/distribution accounts before dispatching it.
+CI runs on pull requests and pushes to `main`/`relay-architecture`. The manually dispatched **Production delivery** workflow verifies its revision, deploys staging/production Workers, and orchestrates only the Codemagic `ios-release` workflow. Android signing and distribution are deferred; Android debug-build CI checks remain enabled. Configure the production GitHub environment and iOS signing/distribution accounts before dispatching it.

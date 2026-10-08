@@ -25,7 +25,9 @@ No Gmail, APNs, FCM, or payload cryptographic secrets are needed for the health-
 4. Create a Codemagic environment group `production_mobile`, accessible only to trusted release workflows. Configure the signing and store credentials below.
 5. Scan the branch containing the committed YAML. Confirm workflows `android-release` and `ios-release` are recognized. Disable duplicate branch/webhook release triggers; GitHub Actions orchestrates release builds.
 
-## 4. Android signing and internal distribution
+## 4. Android signing and internal distribution (deferred)
+
+GitHub production delivery currently runs only `ios-release`. Android signing and Play credentials are not required for this release. Android Codemagic workflows remain available for future setup; Android debug-build CI checks remain enabled.
 
 Confirm the app name and unique application ID. Provisional ID: `com.deepshareai.agentgateway`. Changing it requires updating the native application ID, Codemagic variables, and store record together before the first upload.
 
@@ -52,14 +54,16 @@ The workflow uploads a signed IPA and requests TestFlight distribution, without 
 After committing/pushing the implementation and completing provider setup:
 
 1. Run GitHub **CI** and resolve all failures, including Compose and Android debug-build checks.
-2. Dispatch **Production delivery** on the trusted release branch. It deploys staging, verifies it, deploys production, verifies it, then starts both Codemagic workflows for that revision.
-3. Record Worker URLs/deployment versions, Actions run URL, both Codemagic build IDs, signed artifact versions, and store delivery status. `delivery-report.json` excludes tokens and artifact download links.
-4. Install/launch the Android internal build and iOS TestFlight build on physical devices. Verify the displayed release matches the tested commit and account connection/agent access is unavailable.
+2. Dispatch **Production delivery** on the trusted release branch. It deploys staging, verifies it, deploys production, verifies it, then starts only `ios-release` for that revision.
+3. Record Worker URLs/deployment versions, Actions run URL, the iOS Codemagic build ID, signed artifact version, and TestFlight delivery status. `delivery-report.json` excludes tokens and artifact download links.
+4. Install/launch the iOS TestFlight build on a physical device. Verify the displayed release matches the tested commit and account connection/agent access is unavailable. Android distribution and device evidence are deferred.
 5. Verify failed-build status propagation using an isolated test/mocked orchestration scenario, and validate relay rollback as below.
 
-Day 1 is complete only after these live checks and distribution evidence exist. Configuration files alone do not establish completion.
+The current iOS-only Day 1 delivery requires these live checks and iOS distribution evidence. Android acceptance is deferred at the user's request and does not block this scope. Configuration files alone do not establish completion.
 
 ## 7. Rollback
+
+The manually dispatched **Relay recovery** workflow provides credential-managed recovery using the GitHub `production` environment. Select `staging` and operation `list` to record known deployment/version IDs. For operation `rollback`, supply an explicitly selected compatible Worker version UUID and its full commit SHA; the workflow activates it and verifies `/health`. Repeat for production only after staging validation. Use the same workflow to restore the intended release by selecting its recorded version and SHA. Recovery and production delivery share a concurrency group so they cannot run together. Recovery artifacts record the deployments before/after the operation. A successful recovery run alone does not prove a round trip: record both rollback and restoration runs.
 
 List known Worker versions with `npx wrangler deployments list --config relay/wrangler.toml --env production`. Use `npx wrangler rollback <version-id> --config relay/wrangler.toml --env production` to return to an explicitly selected compatible version, then verify `/health` against that revision. The first deployment has no preceding version; create/validate a second safe health-only revision to demonstrate rollback and redeploy the intended release afterward. Apply the same procedure to staging first.
 

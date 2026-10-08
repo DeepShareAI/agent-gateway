@@ -48,6 +48,8 @@ docs/
 
 ## Ordered milestones
 
+Current Day 1 scope: Android signing, store distribution, and Android device acceptance are deferred at the user's request. Day 1 delivery now targets staging/production Cloudflare relays and the signed iOS TestFlight shell, including physical iOS installation and relay rollback evidence. Android debug-build checks remain in CI. References to Android/iOS delivery below describe the original plan; Android delivery resumes in a separately authorized follow-up.
+
 Each milestone is a separate PR. Numbering describes order, not guaranteed delivery dates. Native background execution and push require physical-device validation.
 
 | PR | Scope | Acceptance |
