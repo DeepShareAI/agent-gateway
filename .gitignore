@@ -8,3 +8,7 @@ test-results/
 !.env.example
 .DS_Store
 *.log
+
+.wrangler/
+gha-creds-*.json
+codemagic-*.json

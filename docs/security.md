@@ -27,8 +27,14 @@ API tests check the exact public response, rejection of unexpected input, absent
 
 ## Required cloud boundaries from Day 1
 
-Production uses Cloudflare, Cloud Run, Neon PostgreSQL, and Codemagic from Day 1; a hosted test environment is deferred. Require HTTPS for public traffic and TLS for database connections. Use synthetic data in local/CI tests; never copy production private data or credentials into test jobs. Cloudflare API routing must disable caching and preserve backend authorization boundaries. Edge controls must account for direct Cloud Run origin access.
+Production uses Cloudflare, Cloud Run, Neon PostgreSQL, and Codemagic from Day 1; a hosted test environment is deferred. Require HTTPS for public traffic and TLS for database connections. Use synthetic data in local/CI tests; never copy production private data or credentials into test jobs. Cloudflare API routing must disable caching and preserve backend authorization boundaries. The Day 1 Cloud Run origin intentionally allows public liveness access; Cloudflare is not an authentication boundary. Private routes must enforce security at the backend before implementation.
 
 GitHub Actions gates deployments and production promotion; untrusted pull requests receive no deploy or signing secrets. Use least-privilege environment credentials and short-lived cloud authentication where supported. Store runtime secrets in managed secret storage and signing credentials in Codemagic secret management. Browser and mobile artifacts must contain no database or deployment credentials.
 
 Day 1 production exposes only the dashboard and public liveness response. Private-data routes remain unavailable until their authentication and authorization milestones are complete. Cloud security configuration, isolation from local/CI testing, and rollback checks require evidence before Day 1 acceptance; these controls are requirements, not claims about the current implementation. See [deployment requirements](deployment.md).
+
+## Implemented deployment controls
+
+Production workflows run only from `main`, serialize deployment/rollback, use the GitHub `production` environment, and authenticate to Google via OIDC. Environment reviewer and branch protection rules still require account setup. Deployment tokens are passed only to steps that need them. The Neon check verifies the TLS certificate and suppresses connection error details. The Worker forwards no client cookies or authorization headers to the public health endpoint and never caches API results. Unknown routes are blocked at the edge and remain unimplemented at the origin.
+
+Codemagic checks the expected Git commit before building; GitHub waits for both native workflows to finish successfully. Android release artifacts require production signing and cannot fall back to the debug key. Public app-store publishing is disabled. Tests cover route restrictions, credential stripping, upstream failures, enforced database TLS, build failures, status parsing, and timeout cancellation. Live origin, signing, and GitHub environment protection checks remain pending.

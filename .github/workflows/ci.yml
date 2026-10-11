@@ -1,6 +1,7 @@
 name: Day 1 checks
 
 on:
+  workflow_call:
   push:
   pull_request:
 
@@ -20,7 +21,9 @@ jobs:
       - run: npm run typecheck
       - run: npm run lint
       - run: npm test
+      - run: npm run test:deployment
       - run: npm run build
+      - run: npx --no-install wrangler deploy --dry-run --config infra/cloudflare/wrangler.json
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
 

@@ -7,3 +7,6 @@
 mobile
 test-results
 playwright-report
+
+gha-creds-*.json
+.wrangler

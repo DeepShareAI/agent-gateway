@@ -10,6 +10,9 @@ Status: Day 1's Docker Compose acceptance passed on macOS 12.7.6 using Colima's 
 - PostgreSQL, backend, and web Compose services with startup health checks and persistent database storage.
 - Lockfiles, local configuration setup, CI, OpenAPI, architecture, and security documentation.
 
+- Production deployment/rollback workflows, Cloudflare Worker/static assets, Neon TLS connectivity check, and Codemagic orchestration.
+- Android release signing requires production credentials and no longer uses the debug key.
+
 ## Checks run
 
 | Check | Result |
@@ -37,10 +40,10 @@ The development host has macOS 12.7.6. Node.js 22.23.3 was installed in `~/.loca
 
 - No Android emulator or iOS simulator/toolchain is available. Native builds and device launch remain unverified. Widget tests and a Flutter web build do not substitute for those checks.
 
-- GitHub Actions deployment orchestration and production gates have not been implemented; the existing workflow runs checks only.
+- GitHub Actions deployment and rollback workflows are implemented locally; production environment protection, provider variables/secrets, and remote workflow runs remain unverified.
 - Cloudflare and Cloud Run production deployments, deployed dashboard and API smoke checks, and rollback verification remain pending.
 - Neon production resources and TLS connectivity checks remain pending; `/health` does not verify database connectivity.
-- Codemagic production workflows, Android/iOS artifacts, signing, and production release configuration remain pending.
+- Codemagic production workflows and orchestration are implemented and schema-validated; actual Android/iOS artifacts, signing, and native launch remain unverified.
 - Record workflow run links, source commits, environment URLs, artifact identifiers, and results using the [deployment acceptance criteria](deployment.md).
 
 ## Scope and security
@@ -48,3 +51,16 @@ The development host has macOS 12.7.6. Node.js 22.23.3 was installed in `~/.loca
 No database schema or migrations are introduced. The health endpoint checks process liveness only. No authentication or private-data APIs are exposed. Validation errors omit user-provided values, Compose ports bind to loopback, and the database password is generated into an ignored file.
 
 The next planned milestone is PR02 (database and domain model), after Day 1 acceptance is verified and further work is requested.
+
+## Production pipeline implementation validation
+
+- Deployment tests: 11 passed (Worker route restrictions, credential stripping, errors/HEAD, Neon TLS configuration, Codemagic status/failure/timeout handling).
+- TypeScript type checking and ESLint: passed.
+- Backend regression suite: 24 tests passed.
+- Backend and React production builds: passed.
+- Playwright browser regression checks: 4 passed with installed Chrome.
+- Backend and web Docker images rebuilt successfully with the updated lockfile on Colima.
+- Compose database, backend, and web services all reported healthy; direct and proxied health responses and `no-store` headers passed.
+- Cloudflare Wrangler deployment dry run: passed; this is bundle verification, not a live deployment or local Workers runtime check.
+- CI, deployment, rollback, and Codemagic YAML: parsed successfully. Codemagic configuration passed its official JSON schema.
+- No production accounts, resource identifiers, signing material, or deployment credentials have been supplied in this session. Live deployment, Neon TLS connectivity, native artifacts/device launch, and rollback rehearsal are not claimed complete.

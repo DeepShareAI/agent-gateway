@@ -1,0 +1,71 @@
+name: Production rollback
+
+on:
+  workflow_dispatch:
+    inputs:
+      cloud_run_revision:
+        description: Previously verified Cloud Run revision
+        required: true
+        type: string
+      cloudflare_version:
+        description: Previously verified Cloudflare Worker version UUID
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-deployment
+  cancel-in-progress: false
+
+jobs:
+  rollback:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+      GCP_REGION: ${{ vars.GCP_REGION }}
+      CLOUD_RUN_SERVICE: ${{ vars.CLOUD_RUN_SERVICE }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_WORKER_NAME: ${{ vars.CLOUDFLARE_WORKER_NAME }}
+      PRODUCTION_URL: ${{ vars.PRODUCTION_URL }}
+      CLOUD_RUN_REVISION: ${{ inputs.cloud_run_revision }}
+      CLOUDFLARE_VERSION: ${{ inputs.cloudflare_version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - name: Validate rollback inputs
+        shell: bash
+        run: |
+          [[ "$CLOUD_RUN_REVISION" =~ ^[a-z][a-z0-9-]+$ ]]
+          [[ "$CLOUDFLARE_VERSION" =~ ^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$ ]]
+      - run: npm ci
+      - uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_DEPLOY_SERVICE_ACCOUNT }}
+      - uses: google-github-actions/setup-gcloud@v3
+      - name: Restore Cloud Run traffic
+        run: |
+          gcloud run services update-traffic "$CLOUD_RUN_SERVICE" \
+            --project "$GCP_PROJECT_ID" --region "$GCP_REGION" \
+            --to-revisions "$CLOUD_RUN_REVISION=100" --quiet
+      - name: Restore Cloudflare Worker and assets
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          npx --no-install wrangler rollback "$CLOUDFLARE_VERSION" \
+            --config infra/cloudflare/wrangler.json --name "$CLOUDFLARE_WORKER_NAME" \
+            --message "Restore verified production release" --yes
+      - name: Verify restored production
+        run: node scripts/deploy/smoke.mjs

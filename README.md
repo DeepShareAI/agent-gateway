@@ -28,7 +28,7 @@ Implemented: NestJS `GET /health`, a React dashboard with live backend status an
 
 Production must use Cloudflare, Cloud Run, Neon PostgreSQL, and Codemagic from Day 1. GitHub Actions owns CI/CD orchestration and deployment gates; Codemagic runs mobile platform builds, signing, and distribution. Docker Compose remains the local development setup. A hosted test environment is deferred; CI checks and local testing remain required.
 
-The current repository has CI checks and the local skeleton; cloud deployment and Codemagic integration remain pending Day 1 acceptance. See the [deployment requirements](docs/deployment.md) and [validation status](docs/day-1-validation.md).
+The repository includes production deployment/rollback workflows, Cloudflare routing, Neon connectivity checks, and signed Codemagic build configuration. Provider setup and live deployment verification remain pending Day 1 acceptance. See the [deployment requirements](docs/deployment.md) and [validation status](docs/day-1-validation.md).
 
 ### Start with Docker Compose
 
@@ -101,6 +101,7 @@ npm ci
 npm run typecheck
 npm run lint
 npm test
+npm run test:deployment
 npm run build
 npx playwright install chromium
 npm run test:e2e

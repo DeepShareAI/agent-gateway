@@ -22,4 +22,6 @@ The web server exposes this endpoint at `/api/health` and forwards it to the bac
 
 ## Production routing
 
-From Day 1, production must expose `/api/health` through Cloudflare and route it to `/health` on the production Cloud Run backend, preserving `Cache-Control: no-store`. The API contract is identical locally and in production; a hosted test environment is deferred. Neon connectivity is verified separately because this endpoint is liveness-only. Cloud routing is pending implementation; see [deployment requirements](deployment.md).
+From Day 1, production must expose `/api/health` through Cloudflare and route it to `/health` on the production Cloud Run backend, preserving `Cache-Control: no-store`. The API contract is identical locally and in production; a hosted test environment is deferred. Neon connectivity is verified separately because this endpoint is liveness-only. Cloudflare routing is implemented in `infra/cloudflare/worker.mjs`; live deployment verification remains pending; see [deployment requirements](deployment.md).
+
+The production Worker supports GET and HEAD on `/api/health` and forwards query parameters to backend validation. Unknown API routes and mutation methods return 404. An unavailable or misconfigured backend produces HTTP 502 with `{"message":"Backend unavailable"}` and `Cache-Control: no-store`. This proxy error is separate from the backend OpenAPI contract.

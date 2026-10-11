@@ -1,0 +1,124 @@
+name: Production deployment
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-deployment
+  cancel-in-progress: false
+
+jobs:
+  checks:
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'workflow_dispatch' || vars.PRODUCTION_DEPLOY_ENABLED == 'true')
+    uses: ./.github/workflows/ci.yml
+
+  deploy:
+    needs: checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 210
+    environment:
+      name: production
+      url: ${{ vars.PRODUCTION_URL }}
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+      GCP_REGION: ${{ vars.GCP_REGION }}
+      ARTIFACT_REGISTRY_REPOSITORY: ${{ vars.ARTIFACT_REGISTRY_REPOSITORY }}
+      CLOUD_RUN_SERVICE: ${{ vars.CLOUD_RUN_SERVICE }}
+      CLOUD_RUN_RUNTIME_SERVICE_ACCOUNT: ${{ vars.CLOUD_RUN_RUNTIME_SERVICE_ACCOUNT }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_WORKER_NAME: ${{ vars.CLOUDFLARE_WORKER_NAME }}
+      PRODUCTION_URL: ${{ vars.PRODUCTION_URL }}
+      CODEMAGIC_APP_ID: ${{ vars.CODEMAGIC_APP_ID }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - name: Validate production configuration
+        env:
+          GCP_WORKLOAD_IDENTITY_PROVIDER: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          GCP_DEPLOY_SERVICE_ACCOUNT: ${{ vars.GCP_DEPLOY_SERVICE_ACCOUNT }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CODEMAGIC_API_TOKEN: ${{ secrets.CODEMAGIC_API_TOKEN }}
+          NEON_DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+        run: node scripts/deploy/preflight.mjs
+      - run: npm ci
+      - name: Verify production Neon connectivity
+        env:
+          NEON_DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+        run: node scripts/deploy/neon-check.mjs
+      - name: Build web and backend artifacts
+        run: |
+          npm run build
+          docker build -f backend/Dockerfile -t "agent-gateway:$GITHUB_SHA" .
+      - name: Assign mobile release build number
+        run: echo "RELEASE_BUILD_NUMBER=$((GITHUB_RUN_NUMBER * 100 + GITHUB_RUN_ATTEMPT))" >> "$GITHUB_ENV"
+      - name: Build signed Android artifact in Codemagic
+        env:
+          CODEMAGIC_API_TOKEN: ${{ secrets.CODEMAGIC_API_TOKEN }}
+          CODEMAGIC_WORKFLOW: android-production
+        run: node scripts/deploy/codemagic.mjs
+      - name: Build signed iOS artifact in Codemagic
+        env:
+          CODEMAGIC_API_TOKEN: ${{ secrets.CODEMAGIC_API_TOKEN }}
+          CODEMAGIC_WORKFLOW: ios-production
+        run: node scripts/deploy/codemagic.mjs
+      - uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_DEPLOY_SERVICE_ACCOUNT }}
+      - uses: google-github-actions/setup-gcloud@v3
+      - name: Publish image and deploy Cloud Run
+        run: |
+          set -euo pipefail
+          registry="$GCP_REGION-docker.pkg.dev"
+          image="$registry/$GCP_PROJECT_ID/$ARTIFACT_REGISTRY_REPOSITORY/backend:$GITHUB_SHA"
+          gcloud auth configure-docker "$registry" --quiet
+          docker tag "agent-gateway:$GITHUB_SHA" "$image"
+          docker push "$image"
+          digest=$(gcloud artifacts docker images describe "$image" --format='value(image_summary.digest)')
+          test -n "$digest"
+          immutable_image="$registry/$GCP_PROJECT_ID/$ARTIFACT_REGISTRY_REPOSITORY/backend@$digest"
+          gcloud run deploy "$CLOUD_RUN_SERVICE" \
+            --project "$GCP_PROJECT_ID" --region "$GCP_REGION" \
+            --image "$immutable_image" --service-account "$CLOUD_RUN_RUNTIME_SERVICE_ACCOUNT" \
+            --port 8080 --set-env-vars HOST=0.0.0.0,NODE_ENV=production \
+            --min-instances 0 --max-instances 2 --memory 512Mi --cpu 1 \
+            --allow-unauthenticated --quiet
+          gcloud run services update-traffic "$CLOUD_RUN_SERVICE" \
+            --project "$GCP_PROJECT_ID" --region "$GCP_REGION" --to-latest --quiet
+          backend_origin=$(gcloud run services describe "$CLOUD_RUN_SERVICE" \
+            --project "$GCP_PROJECT_ID" --region "$GCP_REGION" --format='value(status.url)')
+          echo "BACKEND_ORIGIN=$backend_origin" >> "$GITHUB_ENV"
+          revision=$(gcloud run services describe "$CLOUD_RUN_SERVICE" \
+            --project "$GCP_PROJECT_ID" --region "$GCP_REGION" --format='value(status.latestReadyRevisionName)')
+          echo "Cloud Run revision: $revision; image: $immutable_image; commit: $GITHUB_SHA" >> "$GITHUB_STEP_SUMMARY"
+      - name: Deploy Cloudflare web and API routing
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          npx --no-install wrangler deploy --config infra/cloudflare/wrangler.json \
+            --name "$CLOUDFLARE_WORKER_NAME" --var "BACKEND_ORIGIN:$BACKEND_ORIGIN" \
+            --message "GitHub commit $GITHUB_SHA"
+      - name: Verify production dashboard and API
+        run: node scripts/deploy/smoke.mjs
+      - name: Save release evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-${{ github.sha }}-${{ github.run_attempt }}
+          path: |
+            codemagic-*.json
+            web/dist
+          if-no-files-found: warn

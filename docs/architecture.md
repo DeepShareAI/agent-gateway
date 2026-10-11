@@ -32,7 +32,7 @@ GitHub Actions → checks → production deployment gate → production
 
 Provision the production environment from Day 1; defer a hosted test environment. Keep local/CI testing isolated from production resources and secrets. Cloudflare must preserve same-origin browser API routing, mapping `/api/health` to backend `/health`, and must not cache API responses. Cloud Run must listen on its supplied port on `0.0.0.0`; local loopback defaults need deployment configuration. Neon provisioning and a separate connectivity check are Day 1 requirements; Prisma domain models and migrations remain Day 2.
 
-The diagram describes the required deployment target. Cloud configuration and release workflows are not yet implemented in this repository. Flutter remains a static screen until its API client milestone, but native builds and release configuration in Codemagic are required from Day 1. See [deployment and CI/CD](deployment.md).
+The diagram describes the required deployment target. Cloudflare Worker configuration and GitHub Actions/Codemagic release workflows are implemented in the repository; live provider setup and verification remain pending. Flutter remains a static screen until its API client milestone, but native builds and release configuration in Codemagic are required from Day 1. See [deployment and CI/CD](deployment.md).
 
 ## Implementation references
 
@@ -41,3 +41,5 @@ The diagram describes the required deployment target. Cloud configuration and re
 - [Vite setup](https://vite.dev/guide/): React development and production bundling.
 - [Compose startup ordering](https://docs.docker.com/compose/how-tos/startup-order/): gate dependencies on health checks.
 - [Flutter project creation](https://docs.flutter.dev/reference/create-new-app): generate platform runners.
+
+The Day 1 Worker routes only GET/HEAD `/api/health`, preserves query validation, strips client credentials, and returns uncached generic errors if the origin fails. Other API routes return 404. Cloud Run exposes the public liveness endpoint directly as well; backend authorization remains mandatory when private routes arrive. Production deployment uses a digest-pinned container and requires CI, Neon connectivity, and both Codemagic builds to pass.
